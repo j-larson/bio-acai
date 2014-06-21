@@ -10,4 +10,4 @@ main = hspec $ do
       upperCase "simple string" `shouldBe` "SIMPLE STRING"
 
     it "converts to lower case" $ do
-      lowerCase "STUFF" `shouldBe` "stuffa" 
+      lowerCase "STUFF" `shouldBe` "stuff" 
