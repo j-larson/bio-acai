@@ -11,5 +11,9 @@ cabal-version:       >=1.8
 
 executable acai
   main-is:             acai.hs
-  -- other-modules:       
   build-depends:       base ==4.5.*
+
+test-suite tests
+  type:			exitcode-stdio-1.0
+  main-is: 		AcaiUtilTests.hs
+  build-depends:	base, hspec
