@@ -1,9 +1,6 @@
-import Data.Char (toUpper)
-
-upperCase :: String -> String
-upperCase s = map toUpper s 
+import AcaiUtil
 
 main :: IO ()
 main = do
-  putStrLn "Hello world!"
+  putStrLn $ lowerCase "Hello World!"
   putStrLn $ upperCase "Welcome to Acai."
