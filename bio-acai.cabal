@@ -1,0 +1,20 @@
+name:                bio-acai
+version:             0.1.0.0
+synopsis:            A bioinformatics system in Haskell.
+homepage:            https://github.com/j-larson/bio-acai
+license:             BSD3
+license-file:        LICENSE
+author:              Johan Larson
+maintainer:          johan.g.larson@gmail.com
+build-type:          Simple
+cabal-version:       >=1.8
+
+executable acai
+  main-is:             Main.hs
+  build-depends:       base
+  ghc-options:	       -Wall -Werror
+
+test-suite tests
+  type:			exitcode-stdio-1.0
+  main-is: 		AcaiUtilTests.hs
+  build-depends:	base, hspec
