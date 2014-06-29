@@ -20,8 +20,6 @@ data AnnSeq a = AnnSeq { seqFile :: FilePath
                        , seqNum  :: Int -- position in file
                        , seqData :: Sequence a }
 
--- data LinkageOpt = Single | Complete | Upga deriving (Show, Data, Typeable) -- rename
-
 deriving instance Data Linkage
 deriving instance Typeable Linkage
 
@@ -66,10 +64,6 @@ main  = withFile "clustering" WriteMode $ \cfile ->
   Args {..}  <- cmdArgs opts
   fs <- map trim . filter (".faa" `isSuffixOf`) <$> getDirectoryContents dataDir
   seqss <- mapM (\f -> zipWith (AnnSeq f) [1..] `fmap` F.readFasta (untrim f)) fs
-  -- let linkage' = case linkage of
-  --       Single   -> C.SingleLinkage
-  --       Complete -> C.CompleteLinkage
-  --       Upga     -> C.UPGMA
   let d x y
         | frac >= minFrac =
         -- this recomputation of the score is spurious as we know the alignment
