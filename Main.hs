@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, RecordWildCards #-}
+{-# LANGUAGE DeriveDataTypeable, RecordWildCards, StandaloneDeriving #-}
 
 import Bio.Alignment.AlignData                  (toStrings)
 import Bio.Alignment.SAlign             as A
@@ -20,12 +20,16 @@ data AnnSeq a = AnnSeq { seqFile :: FilePath
                        , seqNum  :: Int -- position in file
                        , seqData :: Sequence a }
 
-data LinkageOpt = Single | Complete | Upga deriving (Show, Data, Typeable) -- rename
+-- data LinkageOpt = Single | Complete | Upga deriving (Show, Data, Typeable) -- rename
+
+deriving instance Data Linkage
+deriving instance Typeable Linkage
 
 data Args = Args { dataDir  :: String 
                  , minFrac  :: Double
                  , minScore :: Int
-                 , linkage  :: LinkageOpt
+                 , linkage  :: Linkage
+                 -- , linkage  :: LinkageOpt
                  }
             deriving (Show, Data, Typeable)
 
@@ -35,7 +39,7 @@ opts  = Args { dataDir  = "." &= opt "."  -- ??? redundant; how to show the defa
                               &= help "Directory to search for .faa files; default ."
              , minFrac  = 0.0 &= opt (0.0 :: Double) -- ???
              , minScore = 50  &= opt (50  :: Int)    -- ???
-             , linkage  = Single &= opt Single }     -- ???
+             , linkage  = SingleLinkage &= opt SingleLinkage }     -- ???
              &= summary "Sequence clustering based on local alignment scoring"
 
 ident :: AnnSeq a -> String
@@ -62,10 +66,10 @@ main  = withFile "clustering" WriteMode $ \cfile ->
   Args {..}  <- cmdArgs opts
   fs <- map trim . filter (".faa" `isSuffixOf`) <$> getDirectoryContents dataDir
   seqss <- mapM (\f -> zipWith (AnnSeq f) [1..] `fmap` F.readFasta (untrim f)) fs
-  let linkFun = case linkage of
-        Single   -> C.SingleLinkage
-        Complete -> C.CompleteLinkage
-        Upga     -> C.UPGMA
+  -- let linkage' = case linkage of
+  --       Single   -> C.SingleLinkage
+  --       Complete -> C.CompleteLinkage
+  --       Upga     -> C.UPGMA
   let d x y
         | frac >= minFrac =
         -- this recomputation of the score is spurious as we know the alignment
@@ -77,7 +81,7 @@ main  = withFile "clustering" WriteMode $ \cfile ->
           tot     = sum (zipWith (\a b -> fromEnum (a == b && a /= '-')) s1 s2)
           (s1,s2) = toStrings $ A.local_align M.blosum62 gapPen x y
       clusters = zip [1::Int ..] $
-          C.dendrogram linkFun (concat seqss) (d `on` seqData)
+          C.dendrogram linkage (concat seqss) (d `on` seqData)
         `cutAt` (1.0 / fromIntegral minScore)
 
   forM_ clusters $ \(n,c) ->
