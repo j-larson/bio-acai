@@ -60,6 +60,10 @@ main  = withFile "clustering" WriteMode $ \cfile ->
   Args {..}  <- cmdArgs opts
   fs <- map trim . filter (".faa" `isSuffixOf`) <$> getDirectoryContents dataDir
   seqss <- mapM (\f -> zipWith (AnnSeq f) [1..] `fmap` F.readFasta (untrim f)) fs
+  let linkFun = case linkage of
+        Single   -> C.SingleLinkage
+        Complete -> C.CompleteLinkage
+        Upga     -> C.UPGMA
   let d x y
         | frac >= minFrac =
         -- this recomputation of the score is spurious as we know the alignment
@@ -71,7 +75,7 @@ main  = withFile "clustering" WriteMode $ \cfile ->
           tot     = sum (zipWith (\a b -> fromEnum (a == b && a /= '-')) s1 s2)
           (s1,s2) = toStrings $ A.local_align M.blosum62 gapPen x y
       clusters = zip [1::Int ..] $
-          C.dendrogram SingleLinkage (concat seqss) (d `on` seqData)
+          C.dendrogram linkFun (concat seqss) (d `on` seqData)
         `cutAt` (1.0 / fromIntegral minScore)
 
   forM_ clusters $ \(n,c) ->
