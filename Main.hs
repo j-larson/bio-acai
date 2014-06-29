@@ -31,10 +31,12 @@ data Args = Args { dataDir  :: String
 
 -- TODO bring in Data.Default ??
 opts :: Args
-opts  = Args { dataDir  = "." &= opt "."             -- ??? redundant
+opts  = Args { dataDir  = "." &= opt "."  -- ??? redundant; how to show the defaults automatically in help?
+                              &= help "Directory to search for .faa files; default ."
              , minFrac  = 0.0 &= opt (0.0 :: Double) -- ???
              , minScore = 50  &= opt (50  :: Int)    -- ???
              , linkage  = Single &= opt Single }     -- ???
+             &= summary "Sequence clustering based on local alignment scoring"
 
 ident :: AnnSeq a -> String
 ident s = seqFile s ++ ":" ++ show (seqNum s)
