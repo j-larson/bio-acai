@@ -57,22 +57,25 @@ trim  = reverse . drop 4 . reverse
 untrim :: FilePath -> FilePath
 untrim  = (++ ".faa")
 
+d :: Double -> Sequence a -> Sequence a -> Double
+d minFrac x y
+  | frac >= minFrac = 1.0 / fromIntegral score
+  | otherwise = infinity
+  where
+    frac = fromIntegral tot / fromIntegral (length s1)
+    tot  = sum (zipWith (\a b -> fromEnum (a == b && a /= '-')) s1 s2)
+    (s1,s2)      = toStrings seqs
+    (score,seqs) = A.local_align M.blosum62 gapPen x y
+
 main :: IO ()
 main  = withFile "clustering" WriteMode $ \cfile ->
         withFile "matrix"     WriteMode $ \mfile -> do
   Args {..}  <- cmdArgs opts
-  fs <- map trim . filter (".faa" `isSuffixOf`) <$> getDirectoryContents dataDir
+  fs <- map trim . filter (".faa" `isSuffixOf`)
+          <$> getDirectoryContents dataDir
   seqss <- mapM (\f -> zipWith (AnnSeq f) [1..] <$> F.readFasta (untrim f)) fs
-  let d x y
-        | frac >= minFrac = 1.0 / fromIntegral score
-        | otherwise = infinity
-        where
-          frac = fromIntegral tot / fromIntegral (length s1)
-          tot  = sum (zipWith (\a b -> fromEnum (a == b && a /= '-')) s1 s2)
-          (s1,s2)      = toStrings seqs
-          (score,seqs) = A.local_align M.blosum62 gapPen x y
-      clusters = zip [1::Int ..] $
-          C.dendrogram linkage (concat seqss) (d `on` seqData)
+  let clusters = zip [1::Int ..] $
+          C.dendrogram linkage (concat seqss) (d minFrac `on` seqData)
         `cutAt` (1.0 / fromIntegral minScore)
 
   forM_ clusters $ \(n,c) ->
