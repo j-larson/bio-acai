@@ -31,11 +31,11 @@ data Args = Args { dataDir  :: String
             deriving (Show, Data, Typeable)
 
 opts :: Args
-opts  = Args { dataDir  = def &= opt "." &= typ "DIR"
+opts  = Args { dataDir  = "." &= opt "." &= typ "DIR"
                  &= help "Directory to search for .faa files; default \".\""
              -- how to show the defaults automatically in usage message?
-             , minFrac  = def &= opt (0.0 :: Double)
-             , minScore = def &= opt (50  :: Int)      -- ???
+             , minFrac  = 0.0 &= opt (0.0 :: Double)
+             , minScore = 50  &= opt (50  :: Int)      -- ???
              , linkage  = SingleLinkage &= opt SingleLinkage }
              &= summary "Sequence clustering based on local alignment scoring"
 
