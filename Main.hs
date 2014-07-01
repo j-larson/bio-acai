@@ -15,7 +15,6 @@ import Data.Function                            (on)
 import Data.List                                (isSuffixOf)
 import System.Console.CmdArgs
 import System.Directory
-import System.Exit
 
 -- type of sequences annotated with source file information
 deriving instance Data Linkage
@@ -66,9 +65,11 @@ d minFrac x y
 verifyNonExistent :: FilePath -> IO ()
 verifyNonExistent path = do
   fileExists <- doesFileExist path
-  when fileExists error $ "ERROR: file \"" ++ path ++ "\" already exists"
-  dirExists <- doesDirectoryExist path
-  when dirExists error $ "ERROR: directory \"" ++ path ++ "\" already exists"
+  when fileExists $ do
+    error $ "file \"" ++ path ++ "\" already exists"
+  directoryExists <- doesDirectoryExist path
+  when directoryExists $ do
+    error $ "directory \"" ++ path ++ "\" already exists"
 
 main :: IO ()
 main  = do
@@ -82,8 +83,7 @@ main  = do
   fs <- map trim . filter (".faa" `isSuffixOf`)
           <$> getDirectoryContents dataDir
   when (null fs) $ do
-    putStrLn $ "ERROR: directory " ++ dataDir ++ " contains no .faa input files"
-    exitFailure
+    error $ "directory " ++ dataDir ++ " contains no .faa input files"
 
   -- run the main computation
   seqss <- mapM (\f -> zipWith (AnnSeq f) [1..] <$> F.readFasta (untrim f)) fs
