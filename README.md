@@ -4,7 +4,12 @@ bio-acai
 This is a tiny script for hierarchical clustering based on
 local alignment scores.
 
-You can get usage information with the `--help` flag.
+To install, you need `ghc` and `cabal` installed.  
+`cd` into the source directory and do
 
-To install, use `cabal install --allow-newer` due to some
-too-conservative upper bounds on dependency versions.
+   cabal sandbox init   # optional
+   cabal install --only-dependencies --allow-newer
+   cabal build
+
+This will create an executable at `./dist/build/acai/acai`.
+You can get usage information with the `--help` flag.
