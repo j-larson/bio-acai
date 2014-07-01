@@ -66,13 +66,9 @@ d minFrac x y
 verifyNonExistent :: FilePath -> IO ()
 verifyNonExistent path = do
   fileExists <- doesFileExist path
-  when fileExists $ do
-    putStrLn $ "ERROR: file \"" ++ path ++ "\" already exists"
-    exitFailure
-  directoryExists <- doesDirectoryExist path
-  when directoryExists $ do
-    putStrLn $ "ERROR: directory \"" ++ path ++ "\" already exists"
-    exitFailure
+  when fileExists error $ "ERROR: file \"" ++ path ++ "\" already exists"
+  dirExists <- doesDirectoryExist path
+  when dirExists error $ "ERROR: directory \"" ++ path ++ "\" already exists"
 
 main :: IO ()
 main  = do
