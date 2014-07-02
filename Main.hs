@@ -1,5 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, RecordWildCards, StandaloneDeriving #-}
 
+import Global
+import Output
 import Bio.Alignment.AlignData                  (toStrings)
 import Bio.Alignment.AAlign             as A
 import Bio.Alignment.Matrices           as M
@@ -10,16 +12,11 @@ import Control.Monad
 import Data.Clustering.Hierarchical     as C
 import Data.Data
 import Data.Function                            (on)
-import Data.List                                (intercalate, isSuffixOf)
+import Data.List                                (isSuffixOf)
 import System.Console.CmdArgs
-import System.Directory                         (getDirectoryContents)
-import System.IO
+import System.Directory
 
 -- type of sequences annotated with source file information
-data AnnSeq a = AnnSeq { seqFile :: FilePath
-                       , seqNum  :: Int -- position in file
-                       , seqData :: Sequence a }
-
 deriving instance Data Linkage
 deriving instance Typeable Linkage
 
@@ -38,9 +35,6 @@ opts  = Args { dataDir  = "." &= opt "." &= typ "DIR"
              , minScore = 50  &= opt (50  :: Int)      -- ???
              , linkage  = SingleLinkage &= opt SingleLinkage }
              &= summary "Sequence clustering based on local alignment scoring"
-
-ident :: AnnSeq a -> String
-ident s = seqFile s ++ ":" ++ show (seqNum s)
 
 --readAmino :: FilePath -> IO [Sequence Amino]
 --readAmino  = fmap (map castToAmino) . readFasta
@@ -67,23 +61,35 @@ d minFrac x y
     (s1,s2)      = toStrings seqs
     (score,seqs) = A.local_align M.blosum62 gapPen x y
 
+-- Error out if a file or directory exists at the given path.
+verifyNonExistent :: FilePath -> IO ()
+verifyNonExistent path = do
+  fileExists <- doesFileExist path
+  when fileExists $ do
+    error $ "file \"" ++ path ++ "\" already exists"
+  directoryExists <- doesDirectoryExist path
+  when directoryExists $ do
+    error $ "directory \"" ++ path ++ "\" already exists"
+
 main :: IO ()
-main  = withFile "clustering" WriteMode $ \cfile ->
-        withFile "matrix"     WriteMode $ \mfile -> do
+main  = do
   Args {..}  <- cmdArgs opts
+
+  let clustFileName = "clustering"
+      matrixFileName = "matrix"
+  mapM_ verifyNonExistent [clustFileName, matrixFileName]
+
+  -- get the input files
   fs <- map trim . filter (".faa" `isSuffixOf`)
           <$> getDirectoryContents dataDir
+  when (null fs) $ do
+    error $ "directory " ++ dataDir ++ " contains no .faa input files"
+
+  -- run the main computation
   seqss <- mapM (\f -> zipWith (AnnSeq f) [1..] <$> F.readFasta (untrim f)) fs
   let clusters = zip [1::Int ..] $
           C.dendrogram linkage (concat seqss) (d minFrac `on` seqData)
         `cutAt` (1.0 / fromIntegral minScore)
 
-  forM_ clusters $ \(n,c) ->
-    hPutStrLn cfile $
-      "cluster_" ++ show n ++ " " ++ intercalate "," (map ident (elements c))
-
-  hPutStrLn mfile $ "," ++ intercalate "," fs
-  forM_ clusters $ \(n,c) -> do
-    hPutStr   mfile $ "cluster_" ++ show n ++ " "
-    hPutStrLn mfile $ intercalate "," $
-      map (show . fromEnum . (`elem` map seqFile (elements c))) fs
+  writeFile (clustersOutput clusters) clustFileName
+  writeFile (matrixOutput clusters fs) matrixFileName
