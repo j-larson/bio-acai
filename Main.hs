@@ -12,9 +12,10 @@ import Control.Monad
 import Data.Clustering.Hierarchical     as C
 import Data.Data
 import Data.Function                            (on)
-import Data.List                                (isSuffixOf)
+import Data.List                                (isSuffixOf,tails)
 import System.Console.CmdArgs
 import System.Directory
+import System.Exit
 
 -- type of sequences annotated with source file information
 deriving instance Data Linkage
@@ -43,7 +44,7 @@ infinity :: Double
 infinity  = 1/0.0
 
 gapPen :: (Int, Int)
-gapPen  = (-5,-5)
+gapPen  = (-10,-2)
 
 trim :: FilePath -> FilePath
 trim  = reverse . drop 4 . reverse
@@ -61,6 +62,13 @@ d minFrac x y
     (s1,s2)      = toStrings seqs
     (score,seqs) = A.local_align M.blosum62 gapPen x y
 
+score :: (Sequence a, Sequence a) -> (Sequence a, Sequence a, Int)
+score (s1, s2) = (s1, s2, A.local_score M.blosum45 gapPen s1 s2)
+
+result :: (Sequence a, Sequence a, Int) -> String
+result (s1, s2, scor) = (strLabel s1) ++ " " ++ (strLabel s2) ++ " " ++ (show scor)
+   where strLabel = toStr.seqlabel
+
 -- Error out if a file or directory exists at the given path.
 verifyNonExistent :: FilePath -> IO ()
 verifyNonExistent path = do
@@ -70,6 +78,11 @@ verifyNonExistent path = do
   directoryExists <- doesDirectoryExist path
   when directoryExists $ do
     error $ "directory \"" ++ path ++ "\" already exists"
+
+orderedPairs :: [a] -> [(a,a)]
+orderedPairs l = concatMap headWithRest (tails l)
+   where headWithRest (h:t) = [(h,x) | x <- t]
+         headWithRest _ = []
 
 main :: IO ()
 main  = do
@@ -85,8 +98,19 @@ main  = do
   when (null fs) $ do
     error $ "directory " ++ dataDir ++ " contains no .faa input files"
 
+  let fileNames = map untrim fs
+  sseq <- mapM F.readFasta fileNames
+  let sequences = concat sseq
+      seqPairs = orderedPairs sequences
+      scorings = map (result.score) seqPairs
+  mapM_ putStrLn scorings
+
+  _ <- exitSuccess
+  
+
   -- run the main computation
   seqss <- mapM (\f -> zipWith (AnnSeq f) [1..] <$> F.readFasta (untrim f)) fs
+
   let clusters = zip [1::Int ..] $
           C.dendrogram linkage (concat seqss) (d minFrac `on` seqData)
         `cutAt` (1.0 / fromIntegral minScore)

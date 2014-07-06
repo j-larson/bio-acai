@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 
 executable acai
   main-is:             Main.hs
-  ghc-options:         -Wall -fno-warn-orphans
+  ghc-options:         -Wall -fno-warn-orphans -O2 -rtsopts 
   build-depends:       base >=4.6 && <4.8,
                        cmdargs >= 0.10 && <0.11,
                        directory >= 1.2 && <1.3,
