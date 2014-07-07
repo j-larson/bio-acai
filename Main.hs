@@ -86,10 +86,13 @@ main  = do
     error $ "directory " ++ dataDir ++ " contains no .faa input files"
 
   -- run the main computation
-  seqss <- mapM (\f -> zipWith (AnnSeq f) [1..] <$> F.readFasta (untrim f)) fs
+  seqss <- mapM (\f -> zipWith (AnnSeq f) [1..]
+                         <$> F.readFasta (dataDir ++ "/" ++ untrim f))
+                                         -- TODO use `filepath`
+                fs
   let clusters = zip [1::Int ..] $
           C.dendrogram linkage (concat seqss) (d minFrac `on` seqData)
         `cutAt` (1.0 / fromIntegral minScore)
 
-  writeFile (clustersOutput clusters) clustFileName
-  writeFile (matrixOutput clusters fs) matrixFileName
+  writeFile clustFileName  (clustersOutput clusters)
+  writeFile matrixFileName (matrixOutput clusters fs)
